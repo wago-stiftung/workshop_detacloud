@@ -64,7 +64,75 @@
 1. Zeigen, dass eine Datenbank angelegt wurde und die Daten eingetragen worden sind.
 1. Anlegen eines ```main.py```
     ```python
-    
+    # -*- coding: utf-8 -*-
+
+    from deta import Deta
+    from dotenv import load_dotenv
+    from flask import Flask, request, jsonify
+    from flask_cors import CORS
+    import os
+
+    load_dotenv()
+    DETA_KEY = os.environ.get('DETA_KEY', None)
+
+    if DETA_KEY:
+        deta = Deta(DETA_KEY)
+    else:
+        deta = Deta()
+
+    db_users = deta.Base('users')
+    app = Flask(__name__)
+    CORS(app)
+
+    # {
+    #     "name": str,
+    #     "age": int,
+    #     "hometown": str
+    # }
+
+    @app.route('/users', methods=['GET'])
+    def get_users():
+        userlist = db_users.fetch()
+        return userlist.items
+
+    @app.route('/users', methods=["POST"])
+    def create_user():
+        name = request.json.get("name")
+        age = request.json.get("age")
+        hometown = request.json.get("hometown")
+
+        user = db_users.put({
+            "name": name,
+            "age": age,
+            "hometown": hometown
+        })
+        return jsonify(user, 201)
+
+    @app.route("/users/<key>")
+    def get_user(key):
+        user = db_users.get(key)
+        return user if user else jsonify({"error": "Not found"}, 404)
+
+    @app.route("/users/<key>", methods=["PUT"])
+    def update_user():
+        user = db_users.put(request.json)
+        return user
+
+    @app.route("/users/<key>", methods=["DELETE"])
+    def delete_user(key):
+        db_users.delete(key)
+        return
+    ```
+1. Demonstration der API im Web oder mit [Hoppscotch](https://hoppscotch.io)
+    ```bash
+    $ deta new --name homecontrol
+    $ deta auth disable
+    $ deta deploy
+    ```
+1. Quellcode anpassen
+    1. Datenbank von users auf "lights" wechseln
+    1. Endpoint zum lesen des Zustands erzeugen
+    ```python
     ```
 
 ## 
