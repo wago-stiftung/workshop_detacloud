@@ -12,7 +12,7 @@ Auf [Deta](https://deta.sh) das dashboard anklicken und falls noch nicht gescheh
 
 Um während der Entwicklung mit der Deta cloud zu arbeiten ist ein Kommandozeilentool erforderlich. Dies kann entweder direkt im Betriebssystem des Entwicklungsrechners installiert werden oder bspw. im Development-Container in VS Code.
 
-Die Installationsschritte sind in der [Doku](https://docs.deta.sh/docs/cli/install) beschrieben. In diesem Workshop installieren wir das Tool innerhalb eines Development-Containers (Docker - Ubuntu).
+Die Installationsschritte sind in der [Doku](https://docs.deta.sh/docs/cli/install) beschrieben.
 
 ## Deta Micros
 
@@ -24,17 +24,30 @@ Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Dat
 
 ## Workshop Beispiel - Backend
 
-1. Anlegen eines Repositories auf GitHub mit einer README.md
+1. Anlegen eines Repositories auf GitHub mit einer README.md und mit GitHub Desktop clonen
 1. In VS Code öffnen
+1. OPTION Docker:
     1. Installieren der devcontainer files für Python 3.9
     1. Dockerfile um Deta Tools ergänzen
-    ```Dockerfile
-    USER vscode
+        ```Dockerfile
+        USER vscode
 
-    RUN curl -fsSL https://get.deta.dev/cli.sh | sh
-    RUN echo "export PATH=/home/vscode/.deta/bin:${PATH}" >> /home/vscode/.bashrc
-    ```
-1. Im Devcontainer öffnen
+        RUN curl -fsSL https://get.deta.dev/cli.sh | sh
+        RUN echo "export PATH=/home/vscode/.deta/bin:${PATH}" >> /home/vscode/.bashrc
+        ```
+    1. Im Devcontainer öffnen
+1. OPTION Betriebsystem (Windows):
+    1. Installation ausführen mit
+        ```powershell
+        iwr https://get.deta.dev/cli.ps1 -useb | iex
+        ```
+    1. VS Code Path der Powershell anpassen. File -> Settings
+        `terminal.integrated.env` editieren und ergänzen
+        ```json
+        "terminal.integrated.env.windows": {
+            "PATH": "${env:PATH};C:\\users\\u013728\\.deta\\bin"
+        }
+        ```
 1. Anlegen eines .gitignore
     ```bash
     wget -O .gitignore https://github.com/github/gitignore/raw/master/Python.gitignore
@@ -46,8 +59,7 @@ Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Dat
     deta
     python-dotenv
     ```
-1. Anlegen eines .env
-    Der auth key ist sozusagen das "Passwort", um mit der deta API auf die Cloud zugreifen zu können.
+1. Anlegen einer .env Datei. Der auth key ist sozusagen das "Passwort", um mit der deta API auf die Cloud zugreifen zu können.
     ```bash
     DETA_KEY=<your key>
     ```
@@ -166,4 +178,3 @@ Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Dat
 ## Workshop Beispiel - Frontend
 
 Im Repo muss der korrekte Endpoint in die index.html eingetragen werden. Danach kann die erzeugte Datei (GitHub Pages) geladen und demonstriert werden. Ggf. parallel Dashboard und Frontend...
-
