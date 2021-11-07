@@ -6,11 +6,21 @@
 
 ## Account
 
+Auf [Deta](https://deta.sh) das dashboard anklicken und falls noch nicht geschehen einen Account erstellen. Falls schon ein Account vorhanden ist unterhalb des Registrierungsformulars auf "Sign in" klicken und anmelden.
+
 ## Deta Commandline Tool
+
+Um während der Entwicklung mit der Deta cloud zu arbeiten ist ein Kommandozeilentool erforderlich. Dies kann entweder direkt im Betriebssystem des Entwicklungsrechners installiert werden oder bspw. im Development-Container in VS Code.
+
+Die Installationsschritte sind in der [Doku](https://docs.deta.sh/docs/cli/install) beschrieben. In diesem Workshop installieren wir das Tool innerhalb eines Development-Containers (Docker - Ubuntu).
 
 ## Deta Micros
 
+Ein Deta Micro ist soetwas wie eine kleine virtuelle Maschine, auf der die eigene App im Internet läuft. Dies kann bspw. in Python oder in node.js geschrieben werden. In diesem Workshop werden wir eine ReST API in Python mit dem Flask Framework entwickeln.
+
 ## Deta Base
+
+Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Datenbanken angelegt werden. In diesem Beispiel werden wir den Zustand von Lichtern in einer Datenbank halten und über die ReST API an- und ausschaltbar machen.
 
 ## Workshop Beispiel - Backend
 
@@ -37,10 +47,12 @@
     python-dotenv
     ```
 1. Anlegen eines .env
+    Der auth key ist sozusagen das "Passwort", um mit der deta API auf die Cloud zugreifen zu können.
     ```bash
     DETA_KEY=<your key>
     ```
-1. Anlegen eines Juyter Notebooks zum demonstrieren
+1. Anlegen eines Jupyter Notebooks zum demonstrieren
+    Diese Zelle lädt für die Entwicklung auf dem eigenen Rechner den auth key über dotenv. Sobald der Code in der Cloudinstanz auf einem Deta micro läuft ist der key nicht mehr erforderlich. Dafür ist der Aufruf `deta = Deta()`. 
     ```python
     from deta import Deta
     from dotenv import load_dotenv
@@ -54,6 +66,7 @@
     else:
         deta = Deta()
     ```
+    Als Beispiel für die Cloud wird hier eine Datenbank (Deta base) mit Namen 'users' erzeugt, in der hier dann ein Eintrag eingefügt wird.
     ```python
     users = deta.Base('users')
     users.insert({
@@ -61,7 +74,7 @@
         "last_name": "Bell"
     })
     ```
-1. Zeigen, dass eine Datenbank angelegt wurde und die Daten eingetragen worden sind.
+1. Im Deta Dashboard ist nun eine Datenbank angelegt worden. Hier kann man sich den Inhalt ansehen.
 1. Anlegen eines ```main.py```
     ```python
     # -*- coding: utf-8 -*-
@@ -80,59 +93,77 @@
     else:
         deta = Deta()
 
-    db_users = deta.Base('users')
     app = Flask(__name__)
     CORS(app)
 
-    # {
-    #     "name": str,
-    #     "age": int,
-    #     "hometown": str
-    # }
-
-    @app.route('/users', methods=['GET'])
-    def get_users():
-        userlist = db_users.fetch()
-        return userlist.items
-
-    @app.route('/users', methods=["POST"])
-    def create_user():
-        name = request.json.get("name")
-        age = request.json.get("age")
-        hometown = request.json.get("hometown")
-
-        user = db_users.put({
-            "name": name,
-            "age": age,
-            "hometown": hometown
-        })
-        return jsonify(user, 201)
-
-    @app.route("/users/<key>")
-    def get_user(key):
-        user = db_users.get(key)
-        return user if user else jsonify({"error": "Not found"}, 404)
-
-    @app.route("/users/<key>", methods=["PUT"])
-    def update_user():
-        user = db_users.put(request.json)
-        return user
-
-    @app.route("/users/<key>", methods=["DELETE"])
-    def delete_user(key):
-        db_users.delete(key)
-        return
+    @app.route('/', methods=['GET'])
+    def get_root():
+        return 'WAGO Stiftung - Makeathon 2021 - Workshop Deta Cloud'
     ```
 1. Demonstration der API im Web oder mit [Hoppscotch](https://hoppscotch.io)
+    Zuerst erzeugen wir einen Deta micro mit `deta new`. Durch `deta auth` wird der Endpunkt im Netz für jeden ohne Authentifizierung erreichbar. Lokale Änderungen am Code können mit `deta deploy` immer wieder in die Cloud veröffentlicht werden.
     ```bash
     $ deta new --name homecontrol
     $ deta auth disable
     $ deta deploy
     ```
-1. Quellcode anpassen
-    1. Datenbank von users auf "lights" wechseln
-    1. Endpoint zum lesen des Zustands erzeugen
+1. Ergänzen einer Datenbank `lights` und eines Lesezugriffs im Endpoint
     ```python
-    ```
+    #########################################################
+    ## LIGHTS - READ
+    #########################################################
 
-## 
+    LIGHTNAMES = [
+        'bad1',
+        'bad2',
+        'bad3',
+        'couchtisch',
+        'esstisch',
+        'flur',
+        'gaestezimmer',
+        'garderobe',
+        'kueche',
+        'schlafzimmer',
+        ]
+
+    db_lights = deta.Base('lights')
+    db_lights.put_many([dict(key=n, value=False) for n in LIGHTNAMES])
+    
+    @app.route('/lights', methods=['GET'])
+    def get_lights():
+        lightlist = db_lights.fetch()
+        result = list(
+            map(
+                lambda d: (d['key'], d['value']),
+                lightlist.items
+            )
+        )
+        return jsonify(dict(result))
+
+    @app.route('/lights/<name>', methods=['GET'])
+    def get_light(name):
+        light = db_lights.get(name)
+        return jsonify(light['value']) if light else jsonify({"error": "Not found"}, 404)
+    ```
+    Nach einem `deta deploy` können mit einem Browserfenster auf die Datenbank und einem Browserfenster auf den Endpoint die Abfragen verglichen werden.
+1. Als letzten Punkt im Deta micro soll eine Möglichkeit eingebaut werden ein Licht an- oder auszuschalten. Das erfolgt dann bspw. mit Hoppscotch.io zur Demonstration.
+    ```python
+    #########################################################
+    ## LIGHTS - WRITE
+    #########################################################
+
+    @app.route('/lights/<name>', methods=['POST'])
+    def set_light(name):
+        value = request.json
+        if type(value) == bool:
+            if db_lights.get(name):
+                db_lights.put(value, name)
+                return jsonify(value, 201)
+        return jsonify({"error": "Not found"}, 404)
+    ```
+    Das ganze wird wieder mit `deta deploy` online gestellt.
+
+## Workshop Beispiel - Frontend
+
+Im Repo muss der korrekte Endpoint in die index.html eingetragen werden. Danach kann die erzeugte Datei (GitHub Pages) geladen und demonstriert werden. Ggf. parallel Dashboard und Frontend...
+
