@@ -119,7 +119,7 @@ Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Dat
     $ deta auth disable
     $ deta deploy
     ```
-1. Ergänzen einer Datenbank `lights` und eines Lesezugriffs im Endpoint
+1. Ergänzen einer Datenbank `lights` und füllen mit ein paar Daten
     ```python
     #########################################################
     ## LIGHTS - READ
@@ -140,7 +140,30 @@ Die Deta Base ist eine Datenbank. Aus der eigenen App können leicht mehrere Dat
 
     db_lights = deta.Base('lights')
     db_lights.put_many([dict(key=n, value=False) for n in LIGHTNAMES])
-    
+    ```
+    Nach einem `deta deploy` und einem Aufruf des Endpoints im Webbrowser sollte in der Datenbank im Dashboard ein Eintrag für jedes Licht existieren.
+1. Ergänzen eines Lesezugriffs im Endpoint und auskommentieren der Datenbankinitialisierung
+    ```python
+    #########################################################
+    ## LIGHTS - READ
+    #########################################################
+
+    #LIGHTNAMES = [
+    #    'bad1',
+    #    'bad2',
+    #    'bad3',
+    #    'couchtisch',
+    #    'esstisch',
+    #    'flur',
+    #    'gaestezimmer',
+    #    'garderobe',
+    #    'kueche',
+    #    'schlafzimmer',
+    #    ]
+
+    db_lights = deta.Base('lights')
+    #db_lights.put_many([dict(key=n, value=False) for n in LIGHTNAMES])
+
     @app.route('/lights', methods=['GET'])
     def get_lights():
         lightlist = db_lights.fetch()
